@@ -1,7 +1,8 @@
-#/bin/sh
+#!/bin/sh
 
-# Rousbot: Send "Rous mola" whenever someone mentions Rosa (aka Rous)
-# Copyright (C) 2015  Jaime Mosquera
+# Telebot: Send send a message as soon as a message matches one of the given
+#     patterns
+# Copyright (C) 2016  Jaime Mosquera
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,21 +21,27 @@
 
 LAST_OFFSET=0      # ID of the last analysed message
 BOTKEY=""          # Here you write the ID of the bot; without it, nothing works!
+TEXT_TO_FIND=( '\(Rous\|ROUS\|Rosa\|ROSA\)' '\(peta\|PETA\)' )
+TEXT_TO_SEND=( 'Rous mola'                  'Dora lo peta' )
 
 while true
 do
-    # Read the next message in any group or chat Rousbot is in
-    MESSAGE="`curl --silent "https://api.telegram.org/bot$BOTKEY/getUpdates" --data 'limit=1' --data 'offset='"$LAST_OFFSET"`"
+    # Read the next message in any group or chat this bot is in
+    MESSAGE="$(curl --silent "https://api.telegram.org/bot$BOTKEY/getUpdates" --data 'limit=1' --data 'offset='"$LAST_OFFSET")"
     # Extract the update ID of the current message
-    OFFSET="`echo "$MESSAGE" | sed 's/^.*"update_id":\([-0-9]\{1,10\}\),.*$/\1/;2d'`"
+    OFFSET="$(sed 's/^.*"update_id":\([-0-9]\{1,10\}\),.*$/\1/;2d' <<< "$MESSAGE")"
     # Extract the chat ID where the current message comes from
-    CHAT="`echo "$MESSAGE" | sed 's/^.*"chat":{"id":\([-0-9]\{1,10\}\),.*$/\1/;1d'`"
+    CHAT="$(sed 's/^.*"chat":{"id":\([-0-9]\{1,10\}\),.*$/\1/;1d' <<< "$MESSAGE")"
 
-    # If any of Rosa, Rous, ROSA and ROUS are found, we send the message
-    if echo "$MESSAGE" | grep --quiet '"text":".*\(Rous\|ROUS\|Rosa\|ROSA\)'
-    then
-        curl "https://api.telegram.org/bot$BOTKEY/sendMessage" --data 'chat_id='"$CHAT" --data 'text=Rous mola' &> /dev/null
-    fi
+    for i in $(seq 0 $(expr ${#TEXT_TO_FIND[@]} - 1))
+    do
+        # If any of the given patterns are found, the appropriate message is
+        # sent
+        if grep --quiet '"text":".*'"${TEXT_TO_FIND[$i]}" <<< "$MESSAGE"
+        then
+            curl "https://api.telegram.org/bot$BOTKEY/sendMessage" --data 'chat_id='"$CHAT" --data 'text='"${TEXT_TO_SEND[$i]}" &> /dev/null
+        fi
+    done
 
     # Finding a chat ID means that there has been an update
     if test "x$CHAT" != "x"
