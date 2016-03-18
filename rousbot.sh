@@ -21,7 +21,7 @@
 
 LAST_OFFSET=0                # ID of the last analysed message
 BOTKEY="$(cat .botkey)"      # Here you write the ID of the bot; without it, nothing works!
-TEXT_TO_FIND=( '\(Rous\|ROUS\|Rosa\|ROSA\)' '\(peta\|PETA\)' )
+TEXT_TO_FIND=( '\(Rous\|ROUS\|Rosa\|ROSA\|\\ud83c\\udf39\)' '\(peta\|PETA\)' )
 TEXT_TO_SEND=( 'Rous mola'                  'Dora lo peta' )
 
 while true
