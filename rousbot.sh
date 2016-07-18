@@ -34,7 +34,7 @@ USER_ID_FILE=".userid"
 function get_user_id
 {
     USER_NAME="$1"
-    ID="$(grep "^$1,[[:digit:]]*$" < "$USER_ID_FILE" | head --lines=1 | cut --delimiter=',' --fields=2 --only-delimited)"
+    ID="$(grep "^$1,[-0-9]*$" < "$USER_ID_FILE" | head --lines=1 | cut --delimiter=',' --fields=2 --only-delimited)"
     echo "$ID"
 }
 
