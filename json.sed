@@ -32,16 +32,15 @@
 #   We then remove the escaping %
 
 # We append a global prefix for everything
-1 s/^/JSON/
+1 s/^/"json":/
 
 1,$ {
     :I
 
     # 0) If this line is deemed incomplete, the next one is prefetched and
     #   joined to this one
-    #   A line is incomplete if it ends with :, {, ", [ or ]
-    $! { /[:{"\[\]][ 	]*$/ { N; s/\n//; bI; } }
-    $! { /[,}:{"\[\]][ 	]*$/ { N; s/\n//; bI; } }
+    #   A line is incomplete if it doesn't end with `,' or `}'
+    $! { /[},][ 	]*$/ ! { N; s/\n//; bI; } }
 
     # 1) Escape `%', which will be used as an escape character later on
     s/%/%%%/g
@@ -56,7 +55,7 @@
     #   We use two simple quotation marks so that we can use `[^"]*'
     #  (everything that is not `"') in the expressions below unambiguously,
     #  which would otherwise be very difficult (if not outright impossible)
-    s/"/%''%/g
+    s/\\"/%''%/g
 
     # 5) Escape underscores
     #   This are used for opening and closing quotation marks
@@ -65,32 +64,35 @@
 
     # 6) Replace opening and closing quotation marks to distinguish them
     s/\([:,{\[]\)[ 	\n]*"/\1_"/g
-    s/"[ 	\n]*\([}\]:,]\)/"_\1/g
+    s/^[ 	\n]*"/_"/g
+    s/"[ 	\n]*\([]:,}]\)/"_\1/g
 
     # 7) Escape the characters `,', `.', `{', `}', `[' and `]'
-    s/_"\([^"]*\)\([,.{}\[\]]\)\([^"]*\)"_/_"\1\2\3"_/g
+    s/_"\([^"]*\)\([],.{}\[]\)\([^"]*\)"_/_"\1\2\3"_/g
 
     # 8) Remove unnecessary whitespace
     # TO BE THOUGHT
 
-    # 9) Append to the prefix in the hold zone
-    s/_"\([^"]*\)"_ :[ 	]{/\nSTART _"\1"_\n/g
+    # 9) Start a new lexical block
+    s/_"\([^"]*\)"_[ 	]*:[ 	]*{/\nSTART _"\1"_\n/g
+    s/\[[ 	]*{/\[\nSTART_ELEMENT\n/g
 
-    # 10) Remove from the prefix in the hold zone
+    # 10) End a lexical block
     :H
-    /}[ 	][,}]/ { s/}[ 	]\([,}]\)/\nLESS\n\1/; bH; }
-    /}[ 	]$/ { s/}[ 	]$/\nLESS\n/; bH; }
+    /}[ 	]*[,}]/ { s/}[ 	]*\([,}]\)/\nLESS\n\1/g; bH; }
+    /}[ 	]*$/ { s/}[ 	]*$/\nLESS\n/; bH; }
+    /}[ 	]*\]/ { s/}[ 	]*\]/\nLESS\n/; bH; }
 
     # 11) Replace `:' with bash assignations
-    s/_"\([^"]*\)"_[ 	]:[ 	]/\1=/g
+    s/_"\([^"]*\)"_[ 	]*:[ 	]*/\1=/g
 
-    # 12) Replace `{' and `}' with `[' and `]'
-    #    This supports nested arrays, though bash doesn't
+    # 12) Replace `[' and `]' with `(' and `)'
+    #    This kinda handles nested arrays, though bash doesn't
     :J
-    /\[[ 	]*[^%]/ { s/\[[ 	]*\([^%]\)/(\1/g; bJ; }
+    /\[[ 	]*[^%]/ { s/\[[ 	]*\([^%]\)/\nSTART_ARRAY\n\1/g; bJ; }
 
     :L
-    /[^%][ 	]*\]/ { s/\([^%]\)[ 	]*\]/\1)/g; bL; }
+    /[^%][ 	]*\]/ { s/\([^%]\)[ 	]*\]/\1\nEND_ARRAY\n/g; bL; }
 
     # 13) Un-escape lexical double quotation marks
     s/_"/"/g
@@ -101,4 +103,7 @@
 
     # 15) Un-escape the other characters
     s/%\(.\)%/\1/g
+
+    # 16) Replace commas with newlines
+    s/,/\n/g
 }
