@@ -1,0 +1,104 @@
+# 1)     %  -> %%%
+#   First we escape OUR escape character, to remove any ambiguity
+# 2)     \\ -> %\%
+#   Then we escape JSON's escape character, to help in future changes
+# 3)     \' -> %''%
+#   We escape inner single quotes, to avoid ambiguities with 4)
+# 4)     \" -> %'%
+#   We then escape inner double quotes, to distinguish them from normal double
+#   quotes
+# 5)     _ -> %_%
+#   We escape undescores to solve ambiguities with 5)
+# 6)     {" -> {_"
+#        ," -> ,_"
+#   We change the opening quotation marks to distinguish them from the closing
+#   ones
+# 7)     _".*,.*"_ -> _".*%,%.*"
+#        _".*:.*"_ -> _".*%:%.*"
+#        _".*{.*"_ -> _".*%{%.*"
+#        _".*}.*"_ -> _".*%}%.*"
+#        _".*[.*"_ -> _".*%[%.*"
+#        _".*].*"_ -> _".*%]%.*"
+#   We escape characters inside strings that have a meaning outside them
+# 8)     Remove unnecessary whitespace
+# 9)     [^%]:{ -> {move the name to a special buffer, to be appended to all the properties}
+# 10)    [^%]}  -> {take from the special buffer one level of nestedness}
+# 11)    _".*"_: -> .*=
+#   Take the quotation marks from the first part of the identifiers
+# 12)    [^%][  -> (
+#        [^%]]  -> )
+#   For array support
+# 13)    %. -> .
+#   We then remove the escaping %
+
+# We append a global prefix for everything
+1 s/^/JSON/
+
+1,$ {
+    :I
+
+    # 0) If this line is deemed incomplete, the next one is prefetched and
+    #   joined to this one
+    #   A line is incomplete if it ends with :, {, ", [ or ]
+    $! { /[:{"\[\]][ 	]*$/ { N; s/\n//; bI; } }
+    $! { /[,}:{"\[\]][ 	]*$/ { N; s/\n//; bI; } }
+
+    # 1) Escape `%', which will be used as an escape character later on
+    s/%/%%%/g
+
+    # 2) Escape backslashes
+    s/\\\\/%\\%/g
+
+    # 3) Escape simple quotation marks
+    s/'/%'%/g
+
+    # 4) Escape double quotation marks
+    #   We use two simple quotation marks so that we can use `[^"]*'
+    #  (everything that is not `"') in the expressions below unambiguously,
+    #  which would otherwise be very difficult (if not outright impossible)
+    s/"/%''%/g
+
+    # 5) Escape underscores
+    #   This are used for opening and closing quotation marks
+    #   MAY BE UNNEEDED
+    s/_/%_%/g
+
+    # 6) Replace opening and closing quotation marks to distinguish them
+    s/\([:,{\[]\)[ 	\n]*"/\1_"/g
+    s/"[ 	\n]*\([}\]:,]\)/"_\1/g
+
+    # 7) Escape the characters `,', `.', `{', `}', `[' and `]'
+    s/_"\([^"]*\)\([,.{}\[\]]\)\([^"]*\)"_/_"\1\2\3"_/g
+
+    # 8) Remove unnecessary whitespace
+    # TO BE THOUGHT
+
+    # 9) Append to the prefix in the hold zone
+    s/_"\([^"]*\)"_ :[ 	]{/\nSTART _"\1"_\n/g
+
+    # 10) Remove from the prefix in the hold zone
+    :H
+    /}[ 	][,}]/ { s/}[ 	]\([,}]\)/\nLESS\n\1/; bH; }
+    /}[ 	]$/ { s/}[ 	]$/\nLESS\n/; bH; }
+
+    # 11) Replace `:' with bash assignations
+    s/_"\([^"]*\)"_[ 	]:[ 	]/\1=/g
+
+    # 12) Replace `{' and `}' with `[' and `]'
+    #    This supports nested arrays, though bash doesn't
+    :J
+    /\[[ 	]*[^%]/ { s/\[[ 	]*\([^%]\)/(\1/g; bJ; }
+
+    :L
+    /[^%][ 	]*\]/ { s/\([^%]\)[ 	]*\]/\1)/g; bL; }
+
+    # 13) Un-escape lexical double quotation marks
+    s/_"/"/g
+    s/"_/"/g
+
+    # 14) Un-escape the string double quotation marks
+    s/%''%/\\"/g
+
+    # 15) Un-escape the other characters
+    s/%\(.\)%/\1/g
+}
