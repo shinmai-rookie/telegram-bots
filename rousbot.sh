@@ -17,16 +17,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-BOTKEY="$(cat .botkey)"      # Here you write the ID of the bot; without it, nothing works!
-# Here you write the names of the users, with their IDs
-# The lines of this file have a name , a comma (`,'), and a number each
+BOTKEY_FILE="$(dirname "$0").botkey" # This file should have the ID of your bot
+BOTKEY="$(cat "$BOTKEY_FILE")"       # Optionally, set it here as a variable
+
+# In this file you write the names of the users, with their IDs
+# The lines of this file have a name, a comma (`,'), and a number each
+# They make the code more readable than hard-coding the IDs
 USER_ID_FILE=".userid"
 
 
 # >> get_user_id $USER_NAME
 #   Return the ID of $USER_NAME, which is a name written in the file $USER_ID_FILE
 #  $USER_NAME can be a grep pattern (it CANNOT use `^' and `$' with their usual
-#  meanings, though), but note that it will only match ONE user
+#  meanings, though), but note that it will only match ONE line
 
 function get_user_id
 {
@@ -34,6 +37,7 @@ function get_user_id
     ID="$(grep "^$1,[[:digit:]]*$" < "$USER_ID_FILE" | head --lines=1 | cut --delimiter=',' --fields=2 --only-delimited)"
     echo "$ID"
 }
+
 
 # >> send_message $MESSAGE_TEXT $CHAT_ROOM
 #   Send the message $MESSAGE_TEXT to $CHAT_ROOM
