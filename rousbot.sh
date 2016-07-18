@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-# Telebot: Send send a message as soon as a message matches one of the given
+# Rousbot: Send send a message as soon as a message matches one of the given
 #     patterns
 # Copyright (C) 2016  Jaime Mosquera
 # 
@@ -16,38 +16,117 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# 
-# Also add information on how to contact you by electronic and paper mail.
+
+BOTKEY="$(cat .botkey)"      # Here you write the ID of the bot; without it, nothing works!
+# Here you write the names of the users, with their IDs
+# The lines of this file have a name , a comma (`,'), and a number each
+USER_ID_FILE=".userid"
+
+
+# >> get_user_id $USER_NAME
+#   Return the ID of $USER_NAME, which is a name written in the file $USER_ID_FILE
+#  $USER_NAME can be a grep pattern (it CANNOT use `^' and `$' with their usual
+#  meanings, though), but note that it will only match ONE user
+
+function get_user_id
+{
+    USER_NAME="$1"
+    ID="$(grep "^$1,[[:digit:]]*$" < "$USER_ID_FILE" | head --lines=1 | cut --delimiter=',' --fields=2 --only-delimited)"
+    echo "$ID"
+}
+
+# >> send_message $MESSAGE_TEXT $CHAT_ROOM
+#   Send the message $MESSAGE_TEXT to $CHAT_ROOM
+
+function send_message
+{
+    MESSAGE_TEXT="$1"
+    CHAT_ROOM="$2"
+
+    curl "https://api.telegram.org/bot$BOTKEY/sendMessage" --data 'chat_id='"$CHAT_ROOM" --data 'text='"$MESSAGE_TEXT" &> /dev/null
+}
+
+
+# >> send_message $ACTION
+#   Runs a numbered action, defined here beforehand
+
+function action
+{
+    ACTION=$1
+
+    case $ACTION in
+        1)  send_message 'Someone triggered the action 1!' $(get_user_id Me)
+            ;;
+    esac
+}
+
+
+# Events that trigger this bot
+# A single message can trigger more than one event
+# The first two fields (sender and message) can be negated with a leading `!'
+# The last field is a command if it has a leading `#', or a message that will
+# be sent to the chat the messages come from if it doesn't have a leading `#'
+EVENTS=(
+   # When this person      | says this                                      | send this
+    '.*'                    '\(Rous\|ROUS\|Rosa\|ROSA\|\\ud83c\\udf39\)'     'Rous mola'
+    !$(get_user_id "Me")    '\(Rous\|ROUS\|Rosa\|ROSA\|\\ud83c\\udf39\)'     '#action 1'
+)
 
 LAST_OFFSET=0                # ID of the last analysed message
-BOTKEY="$(cat .botkey)"      # Here you write the ID of the bot; without it, nothing works!
-TEXT_TO_FIND=( '\(Rous\|ROUS\|Rosa\|ROSA\|\\ud83c\\udf39\)' '\(peta\|PETA\)' )
-TEXT_TO_SEND=( 'Rous mola'                  'Dora lo peta' )
 
 while true
 do
+    sleep 1s
+
     # Read the next message in any group or chat this bot is in
     MESSAGE="$(curl --silent "https://api.telegram.org/bot$BOTKEY/getUpdates" --data 'limit=1' --data 'offset='"$LAST_OFFSET")"
     # Extract the update ID of the current message
     OFFSET="$(sed 's/^.*"update_id":\([-0-9]\{1,10\}\),.*$/\1/;2d' <<< "$MESSAGE")"
     # Extract the chat ID where the current message comes from
     CHAT="$(sed 's/^.*"chat":{"id":\([-0-9]\{1,10\}\),.*$/\1/;1d' <<< "$MESSAGE")"
+    # Author of the message
+    FROM="$(sed 's/^.*"from":{"id":\([-0-9]\{1,10\}\),.*$/\1/;1d' <<< "$MESSAGE")"
 
-    for i in $(seq 0 $(expr ${#TEXT_TO_FIND[@]} - 1))
-    do
-        # If any of the given patterns are found, the appropriate message is
-        # sent
-        if grep --quiet '"text":".*'"${TEXT_TO_FIND[$i]}" <<< "$MESSAGE"
-        then
-            curl "https://api.telegram.org/bot$BOTKEY/sendMessage" --data 'chat_id='"$CHAT" --data 'text='"${TEXT_TO_SEND[$i]}" &> /dev/null
-        fi
-    done
-
-    # Finding a chat ID means that there has been an update
+    # Finding a chat ID means there has been an update
     if test "x$CHAT" != "x"
     then
         LAST_OFFSET="`expr $OFFSET + 1`"
+    else
+        continue
     fi
 
-    sleep 1s
+    for i in $(seq 0 3 $(expr ${#EVENTS[@]} - 1)); do
+        # For every event in $EVENTS, this is the condition on the sender and
+        # on the text that triggers, and the action that is carried or message
+        # that is sent
+        SENDER="${EVENTS[$i]}"
+        TEXT="${EVENTS[$(expr $i + 1)]}"
+        EVENT="${EVENTS[$(expr $i + 2)]}"
+
+        # The `*_P' variables are equal to 1 if the part of the trigger they
+        # refer to is negated, and 0 if it's not, except for EVENT_P (1 if it's
+        # a message, and 0 if it's a command)
+        SENDER_P=0
+        TEXT_P=0
+        EVENT_P=0
+
+        [ ${SENDER:0:1} = '!' ] && SENDER="${SENDER:1}" SENDER_P=1
+        [ ${TEXT:0:1} = '!' ] && TEXT="${TEXT:1}" TEXT_P=1
+        [ ${EVENT:0:1} = '#' ] && EVENT="${EVENT:1}" EVENT_P=1
+
+        # Test if the message does and must match, or doesn't and mustn't match
+        # If neither condition is true, we continue
+        grep --quiet '"text":".*'"${TEXT_TO_FIND[$i]}" <<< "$MESSAGE"
+        ! [ $? -eq $TEXT_P ] && continue
+
+        # Test if the sender does and must match, or doesn't and mustn't match
+        # If neither condition is true, we continue
+        grep "$SENDER" <<< "$FROM"
+        ! [ $? -eq $SENDER_P ] && continue
+
+        # If it's a function, we run it
+        [ $EVENT_P -eq 1 ] && $EVENT
+        # If it's a message, we send it
+        [ $EVENT_P -ne 1 ] && send_message "$EVENT" "$CHAT"
+    done
 done
