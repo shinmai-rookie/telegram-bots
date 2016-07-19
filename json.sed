@@ -36,83 +36,133 @@
 1 s/^/"json":/
 
 1,$ {
-    :I
-
+    b STEP_0
     # 0) If this line is deemed incomplete, the next one is prefetched and
     #   joined to this one
     #   A line is incomplete if it doesn't end with `,' or `}'
-    $! { /[},][ 	]*$/ ! { N; s/\n//; bI; } }
+    :STEP_0
 
+    $! { /[},][ 	]*$/ ! { N; s/\n//; b STEP_0; } }
+
+
+    b STEP_1
     # 1) Escape `%', which will be used as an escape character later on
+    :STEP_1
+
     s/%/%%%/g
 
+
+    b STEP_2
     # 2) Escape backslashes
+    :STEP_2
+
     s/\\\\/%\\%/g
 
+
+    b STEP_3
     # 3) Escape simple quotation marks
+    :STEP_3
+
     s/'/%'%/g
 
+
+    b STEP_4
     # 4) Escape double quotation marks
     #   We use two simple quotation marks so that we can use `[^"]*'
     #  (everything that is not `"') in the expressions below unambiguously,
     #  which would otherwise be very difficult (if not outright impossible)
+    :STEP_4
+
     s/\\"/%''%/g
 
+
+    b STEP_5
     # 5) Escape underscores
     #   This are used for opening and closing quotation marks
     #   MAY BE UNNEEDED
+    :STEP_5
+
     s/_/%_%/g
 
+
+    b STEP_6
     # 6) Replace opening and closing quotation marks to distinguish them
+    :STEP_6
+
     s/^[ 	\n]*"/_"/g
     s/\([:,{\[]\)[ 	\n]*"/\1_"/g
     s/"[ 	\n]*\([]:,}]\)/"_\1/g
 
+    b STEP_7
     # 7) Escape the characters `,', `.', `{', `}', `[' and `]'
-    :K
+    :STEP_7
 
-    /_"[^"]*[^%][],.{}\[][^%][^"]*"_/ { s/_"\([^"]*\)\([^%]\)\([],.{}\[]\)\([^%]\)\([^"]*\)"_/_"\1\2%\3%\4\5"_/g; bK; }
+    /_"[^"]*[^%][],.{}\[][^%][^"]*"_/ { s/_"\([^"]*\)\([^%]\)\([],.{}\[]\)\([^%]\)\([^"]*\)"_/_"\1\2%\3%\4\5"_/g; b STEP_7; }
 
+    b STEP_8
     # 8) Remove unnecessary whitespace
     # TO BE THOUGHT
+    :STEP_8
 
-    :H
-
+    b STEP_9
     # 9) Start a new lexical block
-    /^[ 	]*{/                   { s/^[ 	]*{/\nSTART\n/g; bH; }
-    /[,\[][ 	]*{/                   { s/\([,\[]\)[ 	]*{/\1\nSTART\n/g; bH; }
-    /_"[^"]*"_[ 	]*:[ 	]*{/   { s/_"\([^"]*\)"_[ 	]*:[ 	]*{/\nSTART _"\1"_\n/g; bH; }
+    :STEP_9
 
+    /^[ 	]*{/                   { s/^[ 	]*{/\nSTART\n/g; b STEP_9; }
+    /[,\[][ 	]*{/                   { s/\([,\[]\)[ 	]*{/\1\nSTART\n/g; b STEP_9; }
+    /_"[^"]*"_[ 	]*:[ 	]*{/   { s/_"\([^"]*\)"_[ 	]*:[ 	]*{/\nSTART _"\1"_\n/g; b STEP_9; }
+
+    b STEP_10
     # 10) End a lexical block
-    /}[ 	]*$/ { s/}[ 	]*$/\nLESS\n/; bH; }
-    /}[ 	]*[,}]/ { s/}[ 	]*\([,}]\)/\nLESS\n\1/g; bH; }
-    /}[ 	]*\]/ { s/}[ 	]*\]/\nLESS\n\]/; bH; }
+    :STEP_10
 
+    /}[ 	]*$/ { s/}[ 	]*$/\nLESS\n/; b STEP_10; }
+    /}[ 	]*[,}]/ { s/}[ 	]*\([,}]\)/\nLESS\n\1/g; b STEP_10; }
+    /}[ 	]*\]/ { s/}[ 	]*\]/\nLESS\n\]/; b STEP_10; }
+
+    b STEP_11
     # 11) Replace `:' with bash assignments
+    :STEP_11
+
     s/_"\([^"]*\)"_[ 	]*:[ 	]*/\1=/g
 
+    b STEP_12
     # 12) Replace `[' and `]' with `(' and `)'
     #    This kinda handles nested arrays, though bash doesn't
-    :J
-    /\[[ 	]*$/ { s/\[[ 	]*$/\nSTART_ARRAY\n/g; bJ; }
-    /\[[ 	]*[^%]/ { s/\[[ 	]*\([^%]\)/\nSTART_ARRAY\n\1/g; bJ; }
+    :STEP_12
 
-    :L
-    /^[ 	]*\]/ { s/^[ 	]*\]/\nEND_ARRAY\n/g; bL; }
-    /[^%][ 	]*\]/ { s/\([^%]\)[ 	]*\]/\1\nEND_ARRAY\n/g; bL; }
+    :STEP_12_A
+    /\[[ 	]*$/ { s/\[[ 	]*$/\nSTART_ARRAY\n/g; b STEP_12_A; }
+    /\[[ 	]*[^%]/ { s/\[[ 	]*\([^%]\)/\nSTART_ARRAY\n\1/g; b STEP_12_A; }
 
+    :STEP_12_B
+    /^[ 	]*\]/ { s/^[ 	]*\]/\nEND_ARRAY\n/g; b STEP_12_B; }
+    /[^%][ 	]*\]/ { s/\([^%]\)[ 	]*\]/\1\nEND_ARRAY\n/g; b STEP_12_B; }
+
+    b STEP_13
     # 13) Replace commas with newlines
+    :STEP_13
+
     s/^[ 	]*,/\n/g
     s/,[ 	]*$/\n/g
     s/\([^%]\),\([^%]\)/\1\n\2/g
 
+    b STEP_14
     # 14) Un-escape lexical double quotation marks
+    :STEP_14
+
     s/_"/"/g
     s/"_/"/g
 
+    b STEP_15
     # 15) Un-escape the string double quotation marks
+    :STEP_15
+
     s/%''%/\\"/g
 
+    b STEP_16
     # 16) Un-escape the other characters
+    :STEP_16
+
     s/%\(.\)%/\1/g
 }
