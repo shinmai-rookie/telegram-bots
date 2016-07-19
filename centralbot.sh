@@ -1,5 +1,7 @@
 #!/bin/bash
-# json: Parse JSON files through (partly) a sed script
+
+# centralbot.sh: Central bot; downloads and processes messages, and calls the
+#     bots
 # Copyright (C) 2016  Jaime Mosquera
 #
 # This program is free software: you can redistribute it and/or modify
@@ -15,8 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# Path of this script
 BIN_DIR="$(dirname "$0")"
-
 . "$BIN_DIR/json.sh"
 
 BOTS=("$BIN_DIR/rousbot.sh")        # Bots to run (should be runnable programs)
