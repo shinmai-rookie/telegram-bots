@@ -49,11 +49,11 @@
 
 
     b STEP_2
-    # 2) Escape backslashes
+    # 2) Escape escaped backslashes
     #   This avoids ambiguity when escaping double quotation marks
     : STEP_2
 
-    s/\\\\/%\\%/g
+    s/\\\\/%\\\\%/g
 
 
     b STEP_3
@@ -74,107 +74,114 @@
 
 
     b STEP_5
-    # 5) Add underscores to quotation marks to distinguish the opening
-    #   quotation marks from the closing ones
+    # 5) Escape unescaped backslashes
     : STEP_5
+
+    s/\\/%\\%/g
+
+
+    b STEP_6
+    # 6) Add underscores to quotation marks to distinguish the opening
+    #   quotation marks from the closing ones
+    : STEP_6
 
     s/^[ 	\n]*"/_"/g
     s/\([:,{\[]\)[ 	\n]*"/\1_"/g
     s/"[ 	\n]*\([]:,}]\)/"_\1/g
 
 
-    b STEP_6
-    # 6) Escape the characters `,', `.', `{', `}', `[' and `]'
-    #   They're escaped surrounding them with `%'
-    : STEP_6
-
-    s/_"\([^"]*\)\([^%]\)\([],.{}\[]\)\([^%]\)\([^"]*\)"_/_"\1\2%\3%\4\5"_/g
-    t STEP_6
-
-
     b STEP_7
-    # 7) Start a new lexical block
-    #   This marks the beginning of a new object
-    #   In the third case, it's a named object; the other two are members of
-    #   an array
+    # 7) Escape the characters `,', `.', `{', `}', `[' and `]'
+    #   They're escaped surrounding them with `%'
     : STEP_7
 
-    s/^[ 	]*{/\nSTART\n/g
-    s/\([,\[]\)[ 	]*{/\1\nSTART\n/g
-    s/_"\([^"]*\)"_[ 	]*:[ 	]*{/\nSTART _"\1"_\n/g
+    s/_"\([^"]*\)\([^%]\)\([],.{}\[]\)\([^%]\)\([^"]*\)"_/_"\1\2%\3%\4\5"_/g
     t STEP_7
 
 
     b STEP_8
-    # 8) End a lexical block
-    #   This marks the end of an object
+    # 8) Start a new lexical block
+    #   This marks the beginning of a new object
+    #   In the third case, it's a named object; the other two are members of
+    #   an array
     : STEP_8
+
+    s/^[ 	]*{/\nSTART\n/g
+    s/\([,\[]\)[ 	]*{/\1\nSTART\n/g
+    s/_"\([^"]*\)"_[ 	]*:[ 	]*{/\nSTART _"\1"_\n/g
+    t STEP_8
+
+
+    b STEP_9
+    # 9) End a lexical block
+    #   This marks the end of an object
+    : STEP_9
 
     s/}[ 	]*$/\nLESS\n/g
     s/}[ 	]*\([,}]\)/\nLESS\n\1/g
     s/}[ 	]*\]/\nLESS\n\]/g
 
-    t STEP_8
+    t STEP_9
 
 
-    b STEP_9
-    # 9) Replace `:' with bash assignments
-    : STEP_9
+    b STEP_10
+    # 10) Replace `:' with bash assignments
+    : STEP_10
 
     s/_"\([^"]*\)"_[ 	]*:[ 	]*/\1=/g
 
 
-    b STEP_10
-    # 10) Replace `[' and `]' with `START_ARRAY' and `END_ARRAY'
+    b STEP_11
+    # 11) Replace `[' and `]' with `START_ARRAY' and `END_ARRAY'
     #    This helps the shell part of this program to name and enumerate its
     #    members
-    : STEP_10
+    : STEP_11
 
-    : STEP_10_A
+    : STEP_11_A
     s/\[[ 	]*$/\nSTART_ARRAY\n/g
     s/\[[ 	]*\([^%]\)/\nSTART_ARRAY\n\1/g
-    t STEP_10_A
+    t STEP_11_A
 
-    : STEP_10_B
+    : STEP_11_B
     s/^[ 	]*\]/\nEND_ARRAY\n/g
     s/\([^%]\)[ 	]*\]/\1\nEND_ARRAY\n/g
-    t STEP_10_B
+    t STEP_11_B
 
 
-    b STEP_11
-    # 11) Replace commas outside strings with newlines
-    : STEP_11
+    b STEP_12
+    # 12) Replace commas outside strings with newlines
+    : STEP_12
 
     s/^[ 	]*,/\n/g
     s/,[ 	]*$/\n/g
     s/\([^%]\),\([^%]\)/\1\n\2/g
 
 
-    b STEP_12
-    # 12) Un-escape backslashes inside strings
-    : STEP_12
-
-    s/%\\%/\\\\/g
-
-
     b STEP_13
-    # 13) Un-escape the double quotation marks used for strings
+    # 13) Un-escape backslashes inside strings
     : STEP_13
+
+    s/%\\\\%/\\\\/g
+
+
+    b STEP_14
+    # 14) Un-escape the double quotation marks used for strings
+    : STEP_14
 
     s/_"/"/g
     s/"_/"/g
 
 
-    b STEP_14
-    # 14) Un-escape the double quotation marks inside strings
-    : STEP_14
+    b STEP_15
+    # 15) Un-escape the double quotation marks inside strings
+    : STEP_15
 
     s/%''%/\\"/g
 
 
-    b STEP_15
-    # 15) Un-escape the other characters
-    : STEP_15
+    b STEP_16
+    # 16) Un-escape the other characters
+    : STEP_16
 
     s/%\(.\)%/\1/g
 }
