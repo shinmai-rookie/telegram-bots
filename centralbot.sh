@@ -22,9 +22,8 @@ BOTKEY="$(cat "$BOTKEY_FILE")"        # Optionally, set it here as a variable
 LAST_OFFSET=0
 
 while true; do
+    echo "LAST_OFFSET=$LAST_OFFSET"
     MESSAGE="$(curl --silent "https://api.telegram.org/bot$BOTKEY/getUpdates" --data 'limit=1' --data 'offset='"$LAST_OFFSET")"
-
-    echo "$MESSAGE" >> OUTPUT
 
     json_decode "$MESSAGE" ".message.sh"
     sed 's/^\([^=]*\)=.*$/unset \1/' < ".message.sh" > ".message_unset.sh" &
