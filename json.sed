@@ -166,10 +166,12 @@ s/\[[ 	]*$/\nSTART_ARRAY\n/g
 
     b STEP_14
     # 14) Un-escape the double quotation marks used for strings
+    #    They're un-escaped as single quotation marks to keep the strings
+    #    verbatim
     : STEP_14
 
-    s/_"/"/g
-    s/"_/"/g
+    s/_"/'/g
+    s/"_/'/g
 
 
     b STEP_15
