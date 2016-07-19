@@ -104,12 +104,12 @@ for i in $(seq 0 3 $(expr ${#EVENTS[@]} - 1)); do
 
     # Test if the message does and must match, or doesn't and mustn't match
     # If neither condition is true, we continue
-    grep --quiet "${TEXT}" <<< "$json_result_1_message_text" &> /dev/null
+    grep --quiet "${TEXT}" <<< "$json_result_1_message_text"
     ! [ $? -eq $TEXT_P ] && continue
 
     # Test if the sender does and must match, or doesn't and mustn't match
     # If neither condition is true, we continue
-    grep "$SENDER" <<< "$FROM" &> /dev/null
+    grep --quiet "$SENDER" <<< "$FROM"
     ! [ $? -eq $SENDER_P ] && continue
 
     # If it's a function, we run it
