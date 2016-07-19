@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 BOTKEY_FILE="$(dirname "$0")/.botkey" # This file should have the ID of your bot
-BOTKEY="$(cat "$BOTKEY_FILE")"        # Optionally, set it here as a variable
+BOTKEY="$(cat "${BOTKEY_FILE}")"        # Optionally, set it here as a variable
 
 # In this file you write the names of the users, with their IDs
 # The lines of this file have a name, a comma (`,'), and a number each
@@ -26,39 +26,40 @@ BOTKEY="$(cat "$BOTKEY_FILE")"        # Optionally, set it here as a variable
 USER_ID_FILE="$(dirname "$0")/.userid"
 
 
-# >> get_user_id $USER_NAME
-#   Return the ID of $USER_NAME, which is a name written in the file $USER_ID_FILE
-#  $USER_NAME can be a grep pattern (it CANNOT use `^' and `$' with their usual
-#  meanings, though), but note that it will only match ONE line
+# >> get_user_id ${USER_NAME}
+#   Return the ID of ${USER_NAME}, which is a name written in the file
+#  ${USER_ID_FILE}
+#  ${USER_NAME} can be a grep pattern (it CANNOT use `^' and `$' with their
+#  usual meanings, though), but note that it will only match ONE line
 
 function get_user_id
 {
     USER_NAME="$1"
-    ID="$(grep "^$1,[-0-9]*$" < "$USER_ID_FILE" | head --lines=1 | cut --delimiter=',' --fields=2 --only-delimited)"
-    echo "$ID"
+    ID="$(grep "^$1,[-0-9]*$" < "${USER_ID_FILE}" | head --lines=1 | cut --delimiter=',' --fields=2 --only-delimited)"
+    echo "${ID}"
 }
 
 
-# >> send_message $MESSAGE_TEXT $CHAT_ROOM
-#   Send the message $MESSAGE_TEXT to $CHAT_ROOM
+# >> send_message ${MESSAGE_TEXT} ${CHAT_ROOM}
+#   Send the message ${MESSAGE_TEXT} to ${CHAT_ROOM}
 
 function send_message
 {
     MESSAGE_TEXT="$1"
     CHAT_ROOM="$2"
 
-    curl "https://api.telegram.org/bot$BOTKEY/sendMessage" --data 'chat_id='"$CHAT_ROOM" --data 'text='"$MESSAGE_TEXT" &> /dev/null
+    curl "https://api.telegram.org/bot${BOTKEY}/sendMessage" --data 'chat_id='"${CHAT_ROOM}" --data 'text='"${MESSAGE_TEXT}" &> /dev/null
 }
 
 
-# >> send_message $ACTION
+# >> send_message ${ACTION}
 #   Runs a numbered action, defined here beforehand
 
 function action
 {
     ACTION=$1
 
-    case $ACTION in
+    case ${ACTION} in
         1)  send_message 'Someone triggered the action 1!' $(get_user_id Me)
             ;;
     esac
@@ -78,12 +79,12 @@ EVENTS=(
 
 . .message.sh
 # Extract the chat ID where the current message comes from
-CHAT="$json_result_1_message_chat_id"
+CHAT="${json_result_1_message_chat_id}"
 # Author of the message
-FROM="$json_result_1_message_from_id"
+FROM="${json_result_1_message_from_id}"
 
 for i in $(seq 0 3 $(expr ${#EVENTS[@]} - 1)); do
-    # For every event in $EVENTS, this is the condition on the sender and
+    # For every event in ${EVENTS}, this is the condition on the sender and
     # on the text that triggers, and the action that is carried or message
     # that is sent
     SENDER="${EVENTS[$i]}"
@@ -103,16 +104,16 @@ for i in $(seq 0 3 $(expr ${#EVENTS[@]} - 1)); do
 
     # Test if the message does and must match, or does not and must not match
     # If neither condition is true, we continue
-    grep --quiet "${TEXT}" <<< "$json_result_1_message_text"
-    ! [ $? -eq $TEXT_P ] && continue
+    grep --quiet "${TEXT}" <<< "${json_result_1_message_text}"
+    ! [ $? -eq ${TEXT_P} ] && continue
 
     # Test if the sender does and must match, or does not and must not match
     # If neither condition is true, we continue
-    grep --quiet "$SENDER" <<< "$FROM"
-    ! [ $? -eq $SENDER_P ] && continue
+    grep --quiet "${SENDER}" <<< "${FROM}"
+    ! [ $? -eq ${SENDER_P} ] && continue
 
     # If it is a function, we run it
-    [ $EVENT_P -eq 1 ] && $EVENT
+    [ ${EVENT_P} -eq 1 ] && ${EVENT}
     # If it is a message, we send it
-    [ $EVENT_P -ne 1 ] && send_message "$EVENT" "$CHAT"
+    [ ${EVENT_P} -ne 1 ] && send_message "${EVENT}" "${CHAT}"
 done
