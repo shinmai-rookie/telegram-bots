@@ -93,32 +93,41 @@
     s/\([:,{\[]\)[ 	\n]*"/\1_"/g
     s/"[ 	\n]*\([]:,}]\)/"_\1/g
 
+
     b STEP_7
     # 7) Escape the characters `,', `.', `{', `}', `[' and `]'
     :STEP_7
 
-    /_"[^"]*[^%][],.{}\[][^%][^"]*"_/ { s/_"\([^"]*\)\([^%]\)\([],.{}\[]\)\([^%]\)\([^"]*\)"_/_"\1\2%\3%\4\5"_/g; b STEP_7; }
+    s/_"\([^"]*\)\([^%]\)\([],.{}\[]\)\([^%]\)\([^"]*\)"_/_"\1\2%\3%\4\5"_/g
+    t STEP_7
+
 
     b STEP_8
     # 8) Remove unnecessary whitespace
     # TO BE THOUGHT
     :STEP_8
 
+
     b STEP_9
     # 9) Start a new lexical block
     :STEP_9
 
-    /^[ 	]*{/                   { s/^[ 	]*{/\nSTART\n/g; b STEP_9; }
-    /[,\[][ 	]*{/                   { s/\([,\[]\)[ 	]*{/\1\nSTART\n/g; b STEP_9; }
-    /_"[^"]*"_[ 	]*:[ 	]*{/   { s/_"\([^"]*\)"_[ 	]*:[ 	]*{/\nSTART _"\1"_\n/g; b STEP_9; }
+    s/^[ 	]*{/\nSTART\n/g
+    s/\([,\[]\)[ 	]*{/\1\nSTART\n/g
+    s/_"\([^"]*\)"_[ 	]*:[ 	]*{/\nSTART _"\1"_\n/g
+    t STEP_9
+
 
     b STEP_10
     # 10) End a lexical block
     :STEP_10
 
-    /}[ 	]*$/ { s/}[ 	]*$/\nLESS\n/; b STEP_10; }
-    /}[ 	]*[,}]/ { s/}[ 	]*\([,}]\)/\nLESS\n\1/g; b STEP_10; }
-    /}[ 	]*\]/ { s/}[ 	]*\]/\nLESS\n\]/; b STEP_10; }
+    s/}[ 	]*$/\nLESS\n/g
+    s/}[ 	]*\([,}]\)/\nLESS\n\1/g
+    s/}[ 	]*\]/\nLESS\n\]/g
+
+    t STEP_10
+
 
     b STEP_11
     # 11) Replace `:' with bash assignments
@@ -126,18 +135,22 @@
 
     s/_"\([^"]*\)"_[ 	]*:[ 	]*/\1=/g
 
+
     b STEP_12
     # 12) Replace `[' and `]' with `(' and `)'
     #    This kinda handles nested arrays, though bash doesn't
     :STEP_12
 
     :STEP_12_A
-    /\[[ 	]*$/ { s/\[[ 	]*$/\nSTART_ARRAY\n/g; b STEP_12_A; }
-    /\[[ 	]*[^%]/ { s/\[[ 	]*\([^%]\)/\nSTART_ARRAY\n\1/g; b STEP_12_A; }
+    s/\[[ 	]*$/\nSTART_ARRAY\n/g
+    s/\[[ 	]*\([^%]\)/\nSTART_ARRAY\n\1/g
+    t STEP_12_A
 
     :STEP_12_B
-    /^[ 	]*\]/ { s/^[ 	]*\]/\nEND_ARRAY\n/g; b STEP_12_B; }
-    /[^%][ 	]*\]/ { s/\([^%]\)[ 	]*\]/\1\nEND_ARRAY\n/g; b STEP_12_B; }
+    s/^[ 	]*\]/\nEND_ARRAY\n/g
+    s/\([^%]\)[ 	]*\]/\1\nEND_ARRAY\n/g
+    t STEP_12_B
+
 
     b STEP_13
     # 13) Replace commas with newlines
@@ -147,6 +160,7 @@
     s/,[ 	]*$/\n/g
     s/\([^%]\),\([^%]\)/\1\n\2/g
 
+
     b STEP_14
     # 14) Un-escape lexical double quotation marks
     :STEP_14
@@ -154,11 +168,13 @@
     s/_"/"/g
     s/"_/"/g
 
+
     b STEP_15
     # 15) Un-escape the string double quotation marks
     :STEP_15
 
     s/%''%/\\"/g
+
 
     b STEP_16
     # 16) Un-escape the other characters
