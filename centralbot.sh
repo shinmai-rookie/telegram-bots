@@ -22,7 +22,6 @@ BOTKEY="$(cat "$BOTKEY_FILE")"        # Optionally, set it here as a variable
 LAST_OFFSET=0
 
 while true; do
-    echo "LAST_OFFSET=$LAST_OFFSET"
     MESSAGE="$(curl --silent "https://api.telegram.org/bot$BOTKEY/getUpdates" --data 'limit=1' --data 'offset='"$LAST_OFFSET")"
 
     json_decode "$MESSAGE" ".message.sh"
@@ -31,13 +30,14 @@ while true; do
 
     LAST_OFFSET="$(expr $json_result_1_update_id + 1)"
 
-    bash rousbot.sh
+    if [ "$(wc -l < ".message.sh")" -gt 1 ]; then
+        bash rousbot.sh
+    else
+        sleep 1s
+    fi
 
     while [ ! -f ".message_unset.sh" ]; do :; done
     . .message_unset.sh
-    #rm --force ".message.sh"
-
-    if [ $LAST_OFFSET -eq 1 ]; then
-        sleep 1s
-    fi
+    rm --force ".message.sh"
+    rm --force ".message_unset.sh"
 done
