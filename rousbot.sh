@@ -125,7 +125,7 @@ do
 
         # Test if the sender does and must match, or doesn't and mustn't match
         # If neither condition is true, we continue
-        grep "$SENDER" <<< "$FROM"
+        grep --quiet "$SENDER" <<< "$FROM"
         ! [ $? -eq $SENDER_P ] && continue
 
         # If it's a function, we run it
