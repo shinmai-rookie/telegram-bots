@@ -23,21 +23,25 @@ LAST_OFFSET=0
 
 while true; do
     MESSAGE="$(curl --silent "https://api.telegram.org/bot$BOTKEY/getUpdates" --data 'limit=1' --data 'offset='"$LAST_OFFSET")"
+    MESSAGE_SH_LINES=0
 
     json_decode "$MESSAGE" ".message.sh"
     sed 's/^\([^=]*\)=.*$/unset \1/' < ".message.sh" > ".message_unset.sh" &
     . .message.sh
 
     LAST_OFFSET="$(expr $json_result_1_update_id + 1)"
+    MESSAGE_SH_LINES="$(wc -l < ".message.sh")"
 
-    if [ "$(wc -l < ".message.sh")" -gt 1 ]; then
+    if [ $MESSAGE_SH_LINES -gt 1 ]; then
         bash rousbot.sh
-    else
-        sleep 1s
     fi
 
     while [ ! -f ".message_unset.sh" ]; do :; done
     . .message_unset.sh
     rm --force ".message.sh"
     rm --force ".message_unset.sh"
+
+    if [ $MESSAGE_SH_LINES -le 1 ]; then
+        sleep 1s
+    fi
 done
