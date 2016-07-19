@@ -47,8 +47,7 @@ function send_message
     MESSAGE_TEXT="$1"
     CHAT_ROOM="$2"
 
-    echo "Sending \`$MESSAGE_TEXT' to \`$CHAT_ROOM'"
-#    curl "https://api.telegram.org/bot$BOTKEY/sendMessage" --data 'chat_id='"$CHAT_ROOM" --data 'text='"$MESSAGE_TEXT" &> /dev/null
+    curl "https://api.telegram.org/bot$BOTKEY/sendMessage" --data 'chat_id='"$CHAT_ROOM" --data 'text='"$MESSAGE_TEXT" &> /dev/null
 }
 
 
