@@ -53,7 +53,7 @@
     #   This avoids ambiguity when escaping double quotation marks
     : STEP_2
 
-    s/\\\\/%\\%/g
+    s/\\\\/%\\\\%/g
 
 
     b STEP_3
@@ -161,7 +161,7 @@ s/\[[ 	]*$/\nSTART_ARRAY\n/g
     # 13) Un-escape backslashes inside strings
     : STEP_13
 
-    s/%\\%/\\\\/g
+    s/%\\\\%/\\\\/g
 
 
     b STEP_14
