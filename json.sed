@@ -158,32 +158,33 @@ s/\[[ 	]*$/\nSTART_ARRAY\n/g
 
 
     b STEP_13
-    # 13) Un-escape backslashes inside strings
-    : STEP_13
-
-    s/%\\\\%/\\\\/g
-
-
-    b STEP_14
-    # 14) Un-escape the double quotation marks used for strings
+    # 13) Un-escape the double quotation marks used for strings
     #    They're un-escaped as single quotation marks to keep the strings
     #    verbatim
-    : STEP_14
+    : STEP_13
 
     s/_"/'/g
     s/"_/'/g
 
 
-    b STEP_15
-    # 15) Un-escape the double quotation marks inside strings
-    : STEP_15
+    b STEP_14
+    # 14) Un-escape the double quotation marks inside strings
+    : STEP_14
 
     s/%''%/\\"/g
 
 
+    b STEP_15
+    # 15) Un-escape the single characters
+    : STEP_15
+
+    s/%\([],.%{}\[]\)%/\1/g
+
+
     b STEP_16
-    # 16) Un-escape the other characters
+    # 16) Un-escape backslashes inside strings
+    #    Not gonna lie, I don't know why, but it works only after 15)
     : STEP_16
 
-    s/%\(.\)%/\1/g
+    s/%\\\\%/\\\\/g
 }
