@@ -75,25 +75,27 @@
 
     # 9) Start a new lexical block
     s/_"\([^"]*\)"_[ 	]*:[ 	]*{/\nSTART _"\1"_\n/g
-    s/^[ 	]*{/\[\nSTART\n/g
+    s/^[ 	]*{/\nSTART\n/g
     s/\[[ 	]*{/\[\nSTART\n/g
 
     # 10) End a lexical block
     :H
     /}[ 	]*[,}]/ { s/}[ 	]*\([,}]\)/\nLESS\n\1/g; bH; }
     /}[ 	]*$/ { s/}[ 	]*$/\nLESS\n/; bH; }
-    /}[ 	]*\]/ { s/}[ 	]*\]/\nLESS\n/; bH; }
+    /}[ 	]*\]/ { s/}[ 	]*\]/\nLESS\n\]/; bH; }
 
-    # 11) Replace `:' with bash assignations
+    # 11) Replace `:' with bash assignments
     s/_"\([^"]*\)"_[ 	]*:[ 	]*/\1=/g
 
     # 12) Replace `[' and `]' with `(' and `)'
     #    This kinda handles nested arrays, though bash doesn't
     :J
     /\[[ 	]*[^%]/ { s/\[[ 	]*\([^%]\)/\nSTART_ARRAY\n\1/g; bJ; }
+    /\[[ 	]*$/ { s/\[[ 	]*$/\nSTART_ARRAY\n/g; bJ; }
 
     :L
     /[^%][ 	]*\]/ { s/\([^%]\)[ 	]*\]/\1\nEND_ARRAY\n/g; bL; }
+    /^[ 	]*\]/ { s/^[ 	]*\]/\nEND_ARRAY\n/g; bL; }
 
     # 13) Un-escape lexical double quotation marks
     s/_"/"/g
