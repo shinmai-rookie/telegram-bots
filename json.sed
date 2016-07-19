@@ -1,3 +1,5 @@
+#!/bin/sed
+
 # json.sed: sed script that processes JSON files and partially produces a
 #     shell script to assign its members to shell variables
 # Copyright (C) 2016  Jaime Mosquera
@@ -25,6 +27,9 @@
 # The `t' command is used because some commands use previous and following
 # characters for the pattern; without the jumps, those characters would not
 # match the same pattern
+#
+# This script was written for GNU sed. Though the author is not aware of any
+# incompatibility, there might be some; adapt it to your environment as needed
 
 
 # We append a global prefix for everything
@@ -50,14 +55,14 @@
 
     b STEP_2
     # 2) Escape escaped backslashes
-    #   This avoids ambiguity when escaping double quotation marks
+    #   This avoids ambiguity when escaping double quotes
     : STEP_2
 
     s/\\\\/%\\\\%/g
 
 
     b STEP_3
-    # 3) Escape simple quotation marks
+    # 3) Escape simple quotes
     #   Needed to make 4) unambiguous
     : STEP_3
 
@@ -65,7 +70,7 @@
 
 
     b STEP_4
-    # 4) Escape double quotation marks inside strings
+    # 4) Escape double quotes inside strings
     #   This helps to match strings, which are sequences of characters without
     #   `"' inside them
     : STEP_4
@@ -81,8 +86,8 @@
 
 
     b STEP_6
-    # 6) Add underscores to quotation marks to distinguish the opening
-    #   quotation marks from the closing ones
+    # 6) Add underscores to quotes to distinguish the opening quotes from the
+    #   closing quotes
     : STEP_6
 
     s/^[ 	\n]*"/_"/g
@@ -158,9 +163,8 @@ s/\[[ 	]*$/\nSTART_ARRAY\n/g
 
 
     b STEP_13
-    # 13) Un-escape the double quotation marks used for strings
-    #    They're un-escaped as single quotation marks to keep the strings
-    #    verbatim
+    # 13) Un-escape the double quotes used for strings
+    #    They're un-escaped as single quotes to keep the strings verbatim
     : STEP_13
 
     s/_"/'/g
@@ -168,7 +172,7 @@ s/\[[ 	]*$/\nSTART_ARRAY\n/g
 
 
     b STEP_14
-    # 14) Un-escape the double quotation marks inside strings
+    # 14) Un-escape the double quotes inside strings
     : STEP_14
 
     s/%''%/\\"/g

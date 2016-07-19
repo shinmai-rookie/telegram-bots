@@ -1,5 +1,7 @@
 #!/bin/bash
-# json: Parse JSON files through (partly) a sed script
+
+# json.sh: Parse JSON files through (partly) a sed script and generate a shell
+#     script with assignments to access the JSON properties
 # Copyright (C) 2016  Jaime Mosquera
 #
 # This program is free software: you can redistribute it and/or modify
