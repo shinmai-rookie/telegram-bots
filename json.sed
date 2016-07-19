@@ -75,7 +75,8 @@
 
     # 9) Start a new lexical block
     s/_"\([^"]*\)"_[ 	]*:[ 	]*{/\nSTART _"\1"_\n/g
-    s/\[[ 	]*{/\[\nSTART_ELEMENT\n/g
+    s/^[ 	]*{/\[\nSTART\n/g
+    s/\[[ 	]*{/\[\nSTART\n/g
 
     # 10) End a lexical block
     :H
@@ -106,4 +107,13 @@
 
     # 16) Replace commas with newlines
     s/,/\n/g
+}
+
+1,$ {
+    # 17) Remove leading and trailing spaces
+    s/^[ 	]*//g
+    s/[ 	]*$//g
+    
+    # 18) Remove empty lines
+    /^$/ d
 }
