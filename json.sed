@@ -31,6 +31,7 @@
 # 13)    %. -> .
 #   We then remove the escaping %
 
+
 # We append a global prefix for everything
 1 s/^/"json":/
 
@@ -63,8 +64,8 @@
     s/_/%_%/g
 
     # 6) Replace opening and closing quotation marks to distinguish them
-    s/\([:,{\[]\)[ 	\n]*"/\1_"/g
     s/^[ 	\n]*"/_"/g
+    s/\([:,{\[]\)[ 	\n]*"/\1_"/g
     s/"[ 	\n]*\([]:,}]\)/"_\1/g
 
     # 7) Escape the characters `,', `.', `{', `}', `[' and `]'
@@ -74,14 +75,14 @@
     # TO BE THOUGHT
 
     # 9) Start a new lexical block
-    s/_"\([^"]*\)"_[ 	]*:[ 	]*{/\nSTART _"\1"_\n/g
     s/^[ 	]*{/\nSTART\n/g
+    s/_"\([^"]*\)"_[ 	]*:[ 	]*{/\nSTART _"\1"_\n/g
     s/\[[ 	]*{/\[\nSTART\n/g
 
     # 10) End a lexical block
     :H
-    /}[ 	]*[,}]/ { s/}[ 	]*\([,}]\)/\nLESS\n\1/g; bH; }
     /}[ 	]*$/ { s/}[ 	]*$/\nLESS\n/; bH; }
+    /}[ 	]*[,}]/ { s/}[ 	]*\([,}]\)/\nLESS\n\1/g; bH; }
     /}[ 	]*\]/ { s/}[ 	]*\]/\nLESS\n\]/; bH; }
 
     # 11) Replace `:' with bash assignments
@@ -90,12 +91,12 @@
     # 12) Replace `[' and `]' with `(' and `)'
     #    This kinda handles nested arrays, though bash doesn't
     :J
-    /\[[ 	]*[^%]/ { s/\[[ 	]*\([^%]\)/\nSTART_ARRAY\n\1/g; bJ; }
     /\[[ 	]*$/ { s/\[[ 	]*$/\nSTART_ARRAY\n/g; bJ; }
+    /\[[ 	]*[^%]/ { s/\[[ 	]*\([^%]\)/\nSTART_ARRAY\n\1/g; bJ; }
 
     :L
-    /[^%][ 	]*\]/ { s/\([^%]\)[ 	]*\]/\1\nEND_ARRAY\n/g; bL; }
     /^[ 	]*\]/ { s/^[ 	]*\]/\nEND_ARRAY\n/g; bL; }
+    /[^%][ 	]*\]/ { s/\([^%]\)[ 	]*\]/\1\nEND_ARRAY\n/g; bL; }
 
     # 13) Un-escape lexical double quotation marks
     s/_"/"/g
@@ -108,7 +109,9 @@
     s/%\(.\)%/\1/g
 
     # 16) Replace commas with newlines
-    s/,/\n/g
+    s/^[ 	],/\n/g
+    s/,[ 	]$/\n/g
+    s/\([^%]\),\([^%]\)/\1\n\2/g
 }
 
 1,$ {
