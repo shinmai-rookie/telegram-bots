@@ -72,8 +72,8 @@ function action
 # be sent to the chat the messages come from if it doesn't have a leading `#'
 EVENTS=(
    # When this person      | says this                                      | send this
-    '.*'                    '\(Rous\|ROUS\|Rosa\|ROSA\|\\ud83c\\udf39\)'     'Rous mola'
-    !$(get_user_id "Me")    '\(Rous\|ROUS\|Rosa\|ROSA\|\\ud83c\\udf39\)'     '#action 1'
+    '.*'                    '\(Rous\|ROUS\|Rosa\|ROSA\|'$'\ud83c\udf39''\)'  'Rous mola'
+    !$(get_user_id "Me")    '\(Rous\|ROUS\|Rosa\|ROSA\|'$'\ud83c\udf39''\)'  '#action 1'
 )
 
 . .message.sh
