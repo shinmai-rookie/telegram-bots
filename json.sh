@@ -23,24 +23,43 @@
 
 function json_decode
 {
-    PREFIXES=( "" )
+    # Prefixes attached to variable names
+
+    # List of prefixes
+    PREFIXES=( )
+    # Number of prefixes in the list
     PREFIX_N=-1
+    # Composite prefix, formed by all the prefixes
     PREFIX=""
 
-    ARRAY_NAME=( )
 
+    # Prefixes attached to the variables of the arrays
+
+    # List of variable names inside the arrays
+    # It's an array because JSON arrays can be nested
+    ARRAY_NAME=( )
+    # Counter of elements in the array
+    # It's an array because JSON arrays can be nested
     ARRAY_COUNT=( )
+    # Number of array names and counters in the two previous variables
     COUNT_N=-1
 
+
+    # Message that will be decoded
     MESSAGE="$1"
+    # File where the result will be saved
     OUTPUT_FILE="$2"
+
 
     # The second `sed' is needed because somehow backslashes get lost while
     # reading them, but the next character after them (even it it's another
     # backslash) is preserved
     sed -f json.sed <<< "$MESSAGE" |
-    sed 's/\\/\\\\/g' |
+    sed 's/\\/\\\\/g; s/^[ 	]*//g; s/[ 	]*$//g' |
     while read LINE; do
+        # We ignore the empty lines at the beginning
+        [ -z $LINE ] && continue
+
         # If a line ends in a `=', it means an array follows, so we add
         # another array name
         if [ -z "${LINE##*=}" ]; then
@@ -79,6 +98,8 @@ function json_decode
         # Take the name of the array from the prefixes and the list of array
         # names
         elif [ "$LINE" = "END_ARRAY" ]; then
+            echo "${PREFIX}0=${ARRAY_COUNT[$COUNT_N]}"
+
             CURRENT_PREFIX="${PREFIXES[$PREFIX_N]}"
             CURRENT_PREFIX="${CURRENT_PREFIX:1}"
             ARRAY_COUNT[$COUNT_N]=0
@@ -103,6 +124,14 @@ function json_decode
             PREFIX="${PREFIX%%${PREFIXES[$PREFIX_N]}_}"
             PREFIXES[$PREFIX_N]=""
             PREFIX_N="$(expr $PREFIX_N - 1)"
+
+        # If nothing else matches, assume it's a element of an array of
+        # primitive elements
+        else
+            PREFIX="${PREFIX%%${ARRAY_COUNT[$COUNT_N]}_}"
+            ARRAY_COUNT[$COUNT_N]=$(expr ${ARRAY_COUNT[$COUNT_N]} + 1)
+            PREFIX="$PREFIX${ARRAY_COUNT[$COUNT_N]}_"
+            echo "${PREFIX%_}=${LINE}"
         fi
     done >> "$OUTPUT_FILE"
 }
