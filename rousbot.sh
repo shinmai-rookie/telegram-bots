@@ -120,7 +120,7 @@ do
 
         # Test if the message does and must match, or doesn't and mustn't match
         # If neither condition is true, we continue
-        grep --quiet '"text":".*'"${TEXT_TO_FIND[$i]}" <<< "$MESSAGE"
+        grep --quiet '"text":".*'"${TEXT}" <<< "$MESSAGE"
         ! [ $? -eq $TEXT_P ] && continue
 
         # Test if the sender does and must match, or doesn't and mustn't match
