@@ -83,6 +83,8 @@ CHAT="$json_result_1_message_chat_id"
 # Author of the message
 FROM="$json_result_1_message_from_id"
 
+echo "$json_result_1_message_text"
+
 for i in $(seq 0 3 $(expr ${#EVENTS[@]} - 1)); do
     # For every event in $EVENTS, this is the condition on the sender and
     # on the text that triggers, and the action that is carried or message
@@ -104,7 +106,7 @@ for i in $(seq 0 3 $(expr ${#EVENTS[@]} - 1)); do
 
     # Test if the message does and must match, or doesn't and mustn't match
     # If neither condition is true, we continue
-    grep --quiet ".*${TEXT_TO_FIND[$i]}.*" <<< "$json_result_1_message_text"
+    grep --quiet ".*${TEXT}.*" <<< "$json_result_1_message_text"
     ! [ $? -eq $TEXT_P ] && continue
 
     # Test if the sender does and must match, or doesn't and mustn't match
