@@ -21,13 +21,17 @@
 
 function json_decode
 {
+    PREFIXES=( "" )
+    PREFIX_N=-1
+    PREFIX=""
+
+    ARRAY_NAME=( )
+
+    ARRAY_COUNT=( )
+    COUNT_N=-1
+
     MESSAGE="$1"
     OUTPUT_FILE="$2"
-
-    # This doesn't work on Bash < 4.2
-    # It makes the while loop not to be run in a different subshell
-    # Otherwise, FINAL_FILE wouldn't be preserved outside the loop
-    shopt -s lastpipe
 
     sed -f json.sed <<< "$MESSAGE" |
     while read LINE; do
@@ -43,7 +47,8 @@ function json_decode
             VAR="$(sed 's/-/_/g' <<< "${VAR}")"
             DEF="${LINE#*=}"
             NEW_LINE="$PREFIX$VAR=$DEF"
-            FINAL_FILE="$FINAL_FILE$NEW_LINE"$'\n'
+
+            echo "$NEW_LINE"
 
         # If a line is `START "object"', add `object' to the prefix of the
         # variables
