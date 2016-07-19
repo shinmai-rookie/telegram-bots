@@ -69,18 +69,21 @@
     s/"[ 	\n]*\([]:,}]\)/"_\1/g
 
     # 7) Escape the characters `,', `.', `{', `}', `[' and `]'
-    s/_"\([^"]*\)\([],.{}\[]\)\([^"]*\)"_/_"\1\2\3"_/g
+    :K
+
+    /_"[^"]*[^%][],.{}\[][^%][^"]*"_/ { s/_"\([^"]*\)\([^%]\)\([],.{}\[]\)\([^%]\)\([^"]*\)"_/_"\1\2%\3%\4\5"_/g; bK; }
 
     # 8) Remove unnecessary whitespace
     # TO BE THOUGHT
 
+    :H
+
     # 9) Start a new lexical block
-    s/^[ 	]*{/\nSTART\n/g
-    s/_"\([^"]*\)"_[ 	]*:[ 	]*{/\nSTART _"\1"_\n/g
-    s/\[[ 	]*{/\[\nSTART\n/g
+    /^[ 	]*{/                   { s/^[ 	]*{/\nSTART\n/g; bH; }
+    /[,\[][ 	]*{/                   { s/\([,\[]\)[ 	]*{/\1\nSTART\n/g; bH; }
+    /_"[^"]*"_[ 	]*:[ 	]*{/   { s/_"\([^"]*\)"_[ 	]*:[ 	]*{/\nSTART _"\1"_\n/g; bH; }
 
     # 10) End a lexical block
-    :H
     /}[ 	]*$/ { s/}[ 	]*$/\nLESS\n/; bH; }
     /}[ 	]*[,}]/ { s/}[ 	]*\([,}]\)/\nLESS\n\1/g; bH; }
     /}[ 	]*\]/ { s/}[ 	]*\]/\nLESS\n\]/; bH; }
@@ -98,27 +101,18 @@
     /^[ 	]*\]/ { s/^[ 	]*\]/\nEND_ARRAY\n/g; bL; }
     /[^%][ 	]*\]/ { s/\([^%]\)[ 	]*\]/\1\nEND_ARRAY\n/g; bL; }
 
-    # 13) Un-escape lexical double quotation marks
+    # 13) Replace commas with newlines
+    s/^[ 	]*,/\n/g
+    s/,[ 	]*$/\n/g
+    s/\([^%]\),\([^%]\)/\1\n\2/g
+
+    # 14) Un-escape lexical double quotation marks
     s/_"/"/g
     s/"_/"/g
 
-    # 14) Un-escape the string double quotation marks
+    # 15) Un-escape the string double quotation marks
     s/%''%/\\"/g
 
-    # 15) Un-escape the other characters
+    # 16) Un-escape the other characters
     s/%\(.\)%/\1/g
-
-    # 16) Replace commas with newlines
-    s/^[ 	],/\n/g
-    s/,[ 	]$/\n/g
-    s/\([^%]\),\([^%]\)/\1\n\2/g
-}
-
-1,$ {
-    # 17) Remove leading and trailing spaces
-    s/^[ 	]*//g
-    s/[ 	]*$//g
-    
-    # 18) Remove empty lines
-    /^$/ d
 }
