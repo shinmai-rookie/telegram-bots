@@ -47,7 +47,8 @@ function send_message
     MESSAGE_TEXT="$1"
     CHAT_ROOM="$2"
 
-    curl "https://api.telegram.org/bot$BOTKEY/sendMessage" --data 'chat_id='"$CHAT_ROOM" --data 'text='"$MESSAGE_TEXT" &> /dev/null
+    echo "Sending \`$MESSAGE_TEXT' to \`$CHAT_ROOM'"
+#    curl "https://api.telegram.org/bot$BOTKEY/sendMessage" --data 'chat_id='"$CHAT_ROOM" --data 'text='"$MESSAGE_TEXT" &> /dev/null
 }
 
 
@@ -76,61 +77,43 @@ EVENTS=(
     !$(get_user_id "Me")    '\(Rous\|ROUS\|Rosa\|ROSA\|\\ud83c\\udf39\)'     '#action 1'
 )
 
-LAST_OFFSET=0                # ID of the last analysed message
+. .message.sh
+# Extract the chat ID where the current message comes from
+CHAT="$json_result_1_message_chat_id"
+# Author of the message
+FROM="$json_result_1_message_from_id"
 
-while true
-do
-    sleep 1s
+for i in $(seq 0 3 $(expr ${#EVENTS[@]} - 1)); do
+    # For every event in $EVENTS, this is the condition on the sender and
+    # on the text that triggers, and the action that is carried or message
+    # that is sent
+    SENDER="${EVENTS[$i]}"
+    TEXT="${EVENTS[$(expr $i + 1)]}"
+    EVENT="${EVENTS[$(expr $i + 2)]}"
 
-    # Read the next message in any group or chat this bot is in
-    MESSAGE="$(curl --silent "https://api.telegram.org/bot$BOTKEY/getUpdates" --data 'limit=1' --data 'offset='"$LAST_OFFSET")"
-    # Extract the update ID of the current message
-    OFFSET="$(sed 's/^.*"update_id":\([-0-9]\{1,10\}\),.*$/\1/;2d' <<< "$MESSAGE")"
-    # Extract the chat ID where the current message comes from
-    CHAT="$(sed 's/^.*"chat":{"id":\([-0-9]\{1,10\}\),.*$/\1/;1d' <<< "$MESSAGE")"
-    # Author of the message
-    FROM="$(sed 's/^.*"from":{"id":\([-0-9]\{1,10\}\),.*$/\1/;1d' <<< "$MESSAGE")"
+    # The `*_P' variables are equal to 1 if the part of the trigger they
+    # refer to is negated, and 0 if it's not, except for EVENT_P (1 if it's
+    # a message, and 0 if it's a command)
+    SENDER_P=0
+    TEXT_P=0
+    EVENT_P=0
 
-    # Finding a chat ID means there has been an update
-    if test "x$CHAT" != "x"
-    then
-        LAST_OFFSET="`expr $OFFSET + 1`"
-    else
-        continue
-    fi
+    [ ${SENDER:0:1} = '!' ] && SENDER="${SENDER:1}" SENDER_P=1
+    [ ${TEXT:0:1} = '!' ] && TEXT="${TEXT:1}" TEXT_P=1
+    [ ${EVENT:0:1} = '#' ] && EVENT="${EVENT:1}" EVENT_P=1
 
-    for i in $(seq 0 3 $(expr ${#EVENTS[@]} - 1)); do
-        # For every event in $EVENTS, this is the condition on the sender and
-        # on the text that triggers, and the action that is carried or message
-        # that is sent
-        SENDER="${EVENTS[$i]}"
-        TEXT="${EVENTS[$(expr $i + 1)]}"
-        EVENT="${EVENTS[$(expr $i + 2)]}"
+    # Test if the message does and must match, or doesn't and mustn't match
+    # If neither condition is true, we continue
+    grep --quiet ".*${TEXT_TO_FIND[$i]}.*" <<< "$json_result_1_message_text"
+    ! [ $? -eq $TEXT_P ] && continue
 
-        # The `*_P' variables are equal to 1 if the part of the trigger they
-        # refer to is negated, and 0 if it's not, except for EVENT_P (1 if it's
-        # a message, and 0 if it's a command)
-        SENDER_P=0
-        TEXT_P=0
-        EVENT_P=0
+    # Test if the sender does and must match, or doesn't and mustn't match
+    # If neither condition is true, we continue
+    grep "$SENDER" <<< "$FROM"
+    ! [ $? -eq $SENDER_P ] && continue
 
-        [ ${SENDER:0:1} = '!' ] && SENDER="${SENDER:1}" SENDER_P=1
-        [ ${TEXT:0:1} = '!' ] && TEXT="${TEXT:1}" TEXT_P=1
-        [ ${EVENT:0:1} = '#' ] && EVENT="${EVENT:1}" EVENT_P=1
-
-        # Test if the message does and must match, or doesn't and mustn't match
-        # If neither condition is true, we continue
-        grep --quiet '"text":".*'"${TEXT_TO_FIND[$i]}" <<< "$MESSAGE"
-        ! [ $? -eq $TEXT_P ] && continue
-
-        # Test if the sender does and must match, or doesn't and mustn't match
-        # If neither condition is true, we continue
-        grep "$SENDER" <<< "$FROM"
-        ! [ $? -eq $SENDER_P ] && continue
-
-        # If it's a function, we run it
-        [ $EVENT_P -eq 1 ] && $EVENT
-        # If it's a message, we send it
-        [ $EVENT_P -ne 1 ] && send_message "$EVENT" "$CHAT"
-    done
+    # If it's a function, we run it
+    [ $EVENT_P -eq 1 ] && $EVENT
+    # If it's a message, we send it
+    [ $EVENT_P -ne 1 ] && send_message "$EVENT" "$CHAT"
 done
