@@ -26,9 +26,12 @@ BOTKEY_FILE="$BIN_DIR/.botkey"      # This file should have the ID of your bot
 BOTKEY="$(cat "$BOTKEY_FILE")"      # Optionally, set it here as a variable
 
 # Number following the update_id of the last message
-# It's a kind of lower limit for the update_id of the following message
+# It is the lower limit for the update_id of the following message
 # It also removes the previous messages
 NEXT_OFFSET=0
+# Number of lines of the shell script of an empty message (i.e. one where the
+# only data is `{"ok":true,"result":[]}')
+EMPTY_SH_LINES="2"
 
 # Path of the shell script that defines the JSON variables
 MESSAGE_SH="$BIN_DIR/.message.sh"
@@ -49,9 +52,10 @@ while true; do
     # lines of the scripts
     NEXT_OFFSET="$(expr $json_result_1_update_id + 1)"
     MESSAGE_SH_LINES="$(wc -l < "$MESSAGE_SH")"
+    echo "$MESSAGE_SH_LINES"
 
     # If the message is not empty, run the bots
-    if [ $MESSAGE_SH_LINES -gt 1 ]; then
+    if [ $MESSAGE_SH_LINES -gt $EMPTY_SH_LINES ]; then
         for i in $(seq 0 `expr ${#BOTS[@]} - 1`); do
             ./"${BOTS[$i]}"
         done
@@ -65,8 +69,8 @@ while true; do
     rm --force "$MESSAGE_SH"
     rm --force "$MESSAGE_UNSET_SH"
 
-    # If the last message was empty (didn't have any content besides `ok=true')
-    if [ $MESSAGE_SH_LINES -le 1 ]; then
+    # If the last message was empty, sleep for one second
+    if [ $MESSAGE_SH_LINES -le $EMPTY_SH_LINES ]; then
         sleep 1s
     fi
 done

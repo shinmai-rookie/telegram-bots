@@ -69,7 +69,7 @@ function action
 # A single message can trigger more than one event
 # The first two fields (sender and message) can be negated with a leading `!'
 # The last field is a command if it has a leading `#', or a message that will
-# be sent to the chat the messages come from if it doesn't have a leading `#'
+# be sent to the chat the messages come from if it does not have a leading `#'
 EVENTS=(
    # When this person      | says this                                      | send this
     '.*'                    '\(Rous\|ROUS\|Rosa\|ROSA\|\\ud83c\\udf39\)'     'Rous mola'
@@ -91,8 +91,8 @@ for i in $(seq 0 3 $(expr ${#EVENTS[@]} - 1)); do
     EVENT="${EVENTS[$(expr $i + 2)]}"
 
     # The `*_P' variables are equal to 1 if the part of the trigger they
-    # refer to is negated, and 0 if it's not, except for EVENT_P (1 if it's
-    # a message, and 0 if it's a command)
+    # refer to is negated, and 0 if it is not, except for EVENT_P (1 if it is
+    # a message, and 0 if it is a command)
     SENDER_P=0
     TEXT_P=0
     EVENT_P=0
@@ -101,18 +101,18 @@ for i in $(seq 0 3 $(expr ${#EVENTS[@]} - 1)); do
     [ ${TEXT:0:1} = '!' ] && TEXT="${TEXT:1}" TEXT_P=1
     [ ${EVENT:0:1} = '#' ] && EVENT="${EVENT:1}" EVENT_P=1
 
-    # Test if the message does and must match, or doesn't and mustn't match
+    # Test if the message does and must match, or does not and must not match
     # If neither condition is true, we continue
     grep --quiet "${TEXT}" <<< "$json_result_1_message_text"
     ! [ $? -eq $TEXT_P ] && continue
 
-    # Test if the sender does and must match, or doesn't and mustn't match
+    # Test if the sender does and must match, or does not and must not match
     # If neither condition is true, we continue
     grep --quiet "$SENDER" <<< "$FROM"
     ! [ $? -eq $SENDER_P ] && continue
 
-    # If it's a function, we run it
+    # If it is a function, we run it
     [ $EVENT_P -eq 1 ] && $EVENT
-    # If it's a message, we send it
+    # If it is a message, we send it
     [ $EVENT_P -ne 1 ] && send_message "$EVENT" "$CHAT"
 done

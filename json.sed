@@ -22,24 +22,25 @@
 # The seemingly redundant `b TAG; :TAG' helps cleaning the `t buffer': the `t'
 # command jumps if there has been a successful substitution since the last line
 # was read or the last jump was done, so by jumping, we avoid previous
-# replacements interfering with it
+# substitutions interfering with it
 #
-# The `t' command is used because some commands use previous and following
+# The `t' command is used because some commands use the previous and following
 # characters for the pattern; without the jumps, those characters would not
-# match the same pattern
+# match the same pattern again with the following characters
 #
-# This script was written for GNU sed. Though the author is not aware of any
-# incompatibility, there might be some; adapt it to your environment as needed
+# This script was written for GNU sed; though the author is not aware of any
+# incompatibility, there might be some, so you should adapt it to your
+# environment as needed
 
 
-# We append a global prefix for everything
+# We create this fake object to append a prefix to all the variables
 1 s/^/"json":/
 
 
 1,$ {
     b STEP_0
     # 0) Prefetch the next line if this one is deemed incomplete
-    #   A line is deemed incomplete if it doesn't end with `,' or `}'
+    #   A line is deemed incomplete if it does not end with `,' or `}'
     : STEP_0
 
     $! { /[},][ 	]*$/ ! { N; s/\n//; b STEP_0; } }
@@ -97,7 +98,7 @@
 
     b STEP_7
     # 7) Escape the characters `,', `.', `{', `}', `[' and `]'
-    #   They're escaped surrounding them with `%'
+    #   They are escaped surrounding them with `%'
     : STEP_7
 
     s/_"\([^"]*\)\([^%]\)\([],.{}\[]\)\([^%]\)\([^"]*\)"_/_"\1\2%\3%\4\5"_/g
@@ -107,7 +108,7 @@
     b STEP_8
     # 8) Start a new lexical block
     #   This marks the beginning of a new object
-    #   In the third case, it's a named object; the other two are members of
+    #   In the third case, it is a named object; the other two are members of
     #   an array
     : STEP_8
 
@@ -164,7 +165,7 @@ s/\[[ 	]*$/\nSTART_ARRAY\n/g
 
     b STEP_13
     # 13) Un-escape the double quotes used for strings
-    #    They're un-escaped as single quotes to keep the strings verbatim
+    #    They are un-escaped as single quotes to keep the strings verbatim
     : STEP_13
 
     s/_"/'/g
@@ -187,7 +188,7 @@ s/\[[ 	]*$/\nSTART_ARRAY\n/g
 
     b STEP_16
     # 16) Un-escape backslashes inside strings
-    #    Not gonna lie, I don't know why, but it works only after 15)
+    #    Not gonna lie, I don't know why, but it works only if placed after 15)
     : STEP_16
 
     s/%\\\\%/\\\\/g

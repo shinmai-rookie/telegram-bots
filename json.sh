@@ -36,10 +36,10 @@ function json_decode
     # Prefixes attached to the variables of the arrays
 
     # List of variable names inside the arrays
-    # It's an array because JSON arrays can be nested
+    # It is an array because JSON arrays can be nested
     ARRAY_NAME=( )
     # Counter of elements in the array
-    # It's an array because JSON arrays can be nested
+    # It is an array because JSON arrays can be nested
     ARRAY_COUNT=( )
     # Number of array names and counters in the two previous variables
     COUNT_N=-1
@@ -52,13 +52,13 @@ function json_decode
 
 
     # The second `sed' is needed because somehow backslashes get lost while
-    # reading them, but the next character after them (even it it's another
+    # reading them, but the next character after them (even it it is another
     # backslash) is preserved
     sed -f json.sed <<< "$MESSAGE" |
     sed 's/\\/\\\\/g; s/^[ 	]*//g; s/[ 	]*$//g' |
     while read LINE; do
         # We ignore the empty lines at the beginning
-        [ -z $LINE ] && continue
+        [ -z "$LINE" ] && continue
 
         # If a line ends in a `=', it means an array follows, so we add
         # another array name
@@ -110,7 +110,7 @@ function json_decode
             PREFIX_N=$(expr $PREFIX_N - 1)
 
         # START is found wherever `{' was in the original file without a
-        # previous identifier, which means it's a new object in an array of
+        # previous identifier, which means it is a new object in an array of
         # objects
         # Consequently, the counter of the array is increased
         elif [ "$LINE" = "START" ]; then
@@ -125,7 +125,7 @@ function json_decode
             PREFIXES[$PREFIX_N]=""
             PREFIX_N="$(expr $PREFIX_N - 1)"
 
-        # If nothing else matches, assume it's a element of an array of
+        # If nothing else matches, assume it is a element of an array of
         # primitive elements
         else
             PREFIX="${PREFIX%%${ARRAY_COUNT[$COUNT_N]}_}"
