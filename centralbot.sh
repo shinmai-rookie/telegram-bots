@@ -1,6 +1,8 @@
-#MESSAGE="$(curl --silent "https://api.telegram.org/bot$BOTKEY/getUpdates" --data 'limit=1' --data 'offset='"$LAST_OFFSET" | sed -f json.sed )"
-MESSAGE="$(cat output)"
+LAST_OFFSET=0
+BOTKEY_FILE="$(dirname "$0")/.botkey" # This file should have the ID of your bot
+BOTKEY="$(cat "$BOTKEY_FILE")"        # Optionally, set it here as a variable
 
+MESSAGE="$(curl --silent "https://api.telegram.org/bot$BOTKEY/getUpdates" --data 'limit=1' --data 'offset='"$LAST_OFFSET")"
 
 FINAL_FILE=""
 
