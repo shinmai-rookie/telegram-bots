@@ -33,7 +33,11 @@ function json_decode
     MESSAGE="$1"
     OUTPUT_FILE="$2"
 
+    # The second `sed' is needed because somehow backslashes get lost while
+    # reading them, but the next character after them (even it it's another
+    # backslash) is preserved
     sed -f json.sed <<< "$MESSAGE" |
+    sed 's/\\/\\\\/g' |
     while read LINE; do
         # If a line ends in a `=', it means an array follows, so we add
         # another array name
@@ -52,9 +56,9 @@ function json_decode
 
         # If a line is `START "object"', add `object' to the prefix of the
         # variables
-        elif [[ "$LINE" == "START \""*"\"" ]]; then
-            NEW_PREFIX=${LINE##"START \""}
-            NEW_PREFIX=${NEW_PREFIX%%"\""}
+        elif [[ "$LINE" == "START '"*"'" ]]; then
+            NEW_PREFIX=${LINE##"START '"}
+            NEW_PREFIX=${NEW_PREFIX%%"'"}
             PREFIX_N=$(expr $PREFIX_N + 1)
             PREFIXES[$PREFIX_N]="$NEW_PREFIX"
             PREFIX="$PREFIX${NEW_PREFIX}_"
